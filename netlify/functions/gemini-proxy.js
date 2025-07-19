@@ -1,8 +1,24 @@
-const fetch = require("node-fetch");
+const axios = require("axios");
 
 exports.handler = async (event) => {
+  // Handle preflight requests for CORS
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+      },
+    };
+  }
+
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: "Method Not Allowed" }),
+      headers: { "Content-Type": "application/json" },
+    };
   }
 
   try {
@@ -12,36 +28,54 @@ exports.handler = async (event) => {
     }
 
     const payload = JSON.parse(event.body);
+    if (!payload.contents || !Array.isArray(payload.contents)) {
+      throw new Error("Invalid request format");
+    }
 
-    const response = await fetch(
+    const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+      payload,
       {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        timeout: 30000, // 30 seconds timeout
       }
     );
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      return {
-        statusCode: response.status,
-        body: JSON.stringify({
-          error: errorData.error?.message || "Gemini API error",
-        }),
-      };
-    }
-
-    const data = await response.json();
     return {
       statusCode: 200,
-      body: JSON.stringify(data),
-      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(response.data),
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
     };
   } catch (error) {
+    console.error("Proxy error:", error);
+
+    let statusCode = 500;
+    let errorMessage = "Internal server error";
+
+    if (axios.isAxiosError(error)) {
+      statusCode = error.response?.status || 500;
+      errorMessage =
+        error.response?.data?.error?.message ||
+        error.message ||
+        "Request to Gemini API failed";
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message || "Internal server error" }),
+      statusCode: statusCode,
+      body: JSON.stringify({
+        error: errorMessage,
+        details:
+          process.env.NODE_ENV === "development" ? error.stack : undefined,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
     };
   }
 };

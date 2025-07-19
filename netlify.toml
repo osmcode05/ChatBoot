@@ -2,13 +2,24 @@
   command = "npm run build"
   functions = "netlify/functions"
   publish = "build"
+  environment = { NODE_VERSION = "18" }
 
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+  force = true
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https://generativelanguage.googleapis.com"
+    Referrer-Policy = "strict-origin-when-cross-origin"
 
 [dev]
   framework = "create-react-app"
   targetPort = 3000
   autoLaunch = true
+  functionsPort = 9999
