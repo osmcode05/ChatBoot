@@ -9,6 +9,7 @@ import {
   Alert,
   Spinner,
 } from "react-bootstrap";
+import { Robot, PlusCircle, Send } from "react-bootstrap-icons";
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -57,26 +58,36 @@ function App() {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
     <Container fluid className="d-flex flex-column vh-100 p-0 bg-light">
       <nav className="navbar navbar-light bg-white border-bottom shadow-sm p-2">
-        <span className="navbar-brand fw-bold fst-italic">🤖 OSM Chatbot</span>
+        <span className="navbar-brand fw-bold fst-italic">
+          <Robot size={24} className="me-2" /> OSM Chatbot
+        </span>
         <Button variant="primary" onClick={() => setMessages([])}>
-          ➕ New Chat
+          <PlusCircle size={20} className="me-1" /> New Chat
         </Button>
       </nav>
 
       <div className="flex-grow-1 overflow-auto p-3">
         {messages.length === 0 && (
           <div className="h-100 d-flex flex-column align-items-center justify-content-center text-muted">
-            <span style={{ fontSize: "48px" }} className="mb-3">
-              🤖
-            </span>
+            <div style={{ fontSize: "48px" }} className="mb-3">
+              <Robot size={48} />
+            </div>
             <h4 className="text-center fw-bold">
               Hello I'm OSM AI <br /> How can I help you today?
             </h4>
           </div>
         )}
+
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -87,11 +98,8 @@ function App() {
             }`}
           >
             {msg.sender === "bot" && (
-              <span
-                style={{ fontSize: "24px" }}
-                className="text-secondary mt-1 me-2"
-              >
-                🤖
+              <span className="text-secondary mt-1 me-2">
+                <Robot size={24} />
               </span>
             )}
             <Card
@@ -102,22 +110,24 @@ function App() {
               }
               style={{ maxWidth: "75%" }}
             >
-              <Card.Body className="p-2">{msg.content}</Card.Body>
+              <Card.Body className="p-2">
+                {msg.content.split("\n").map((paragraph, idx) => (
+                  <p key={idx} className="mb-0">
+                    {paragraph}
+                  </p>
+                ))}
+              </Card.Body>
             </Card>
             {msg.sender === "user" && (
-              <span
-                style={{ fontSize: "24px" }}
-                className="text-primary mt-1 ms-2"
-              >
-                👤
-              </span>
+              <span className="text-primary mt-1 ms-2">👤</span>
             )}
           </div>
         ))}
+
         {isLoading && (
           <div className="d-flex mb-3 justify-content-start">
-            <span style={{ fontSize: "24px" }} className="text-secondary me-2">
-              🤖
+            <span className="text-secondary me-2">
+              <Robot size={24} />
             </span>
             <Card className="bg-white border">
               <Card.Body className="p-2">
@@ -142,12 +152,8 @@ function App() {
             rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Type your message..."
-            onKeyDown={(e) =>
-              e.key === "Enter" &&
-              !e.shiftKey &&
-              (e.preventDefault(), handleSend())
-            }
             disabled={isLoading}
             className="shadow-none"
             style={{ resize: "none" }}
@@ -157,7 +163,13 @@ function App() {
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
           >
-            {isLoading ? <Spinner animation="grow" size="sm" /> : "▶️"}
+            {isLoading ? (
+              <>
+                <Spinner animation="grow" size="sm" />
+              </>
+            ) : (
+              <Send />
+            )}
           </Button>
         </InputGroup>
       </div>
